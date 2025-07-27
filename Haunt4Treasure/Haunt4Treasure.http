@@ -1,0 +1,6 @@
+@Haunt4Treasure_HostAddress = http://localhost:5212
+
+GET {{Haunt4Treasure_HostAddress}}/api/Question/GetQuestions
+Accept: application/json
+
+###
