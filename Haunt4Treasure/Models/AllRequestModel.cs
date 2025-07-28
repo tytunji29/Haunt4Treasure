@@ -31,20 +31,15 @@ public class ExternalInternalRequest
 }
 #endregion
 
-public class GoogleResponseModel
+public class LoginModel
 {
     public string Email { get; set; }
-    public bool EmailVerified { get; set; }
-    public string Name { get; set; }
-    public string GivenName { get; set; }
-    public string FamilyName { get; set; }
-    public string Picture { get; set; }
+    public string? Password { get; set; }
 }
 public class ExternalLoginRequest
 {
     public string AccessToken { get; set; }
 }
-//generat ApplicationLoginLog model
 public class ApplicationLoginLog
 {
     public string ModeId { get; set; }

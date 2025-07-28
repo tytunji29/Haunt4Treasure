@@ -7,7 +7,7 @@ public interface IAuthRepository
 {
     // Define methods for authentication operations
     Task<string> AddUserAsync(AddUserRequest accessToken);
-    Task<User> GetUserAsync(string email);
+     Task<(User User, decimal balance)> GetUserAsync(string email);
 }
 public class AuthRepository(HauntDbContext dbContext) : IAuthRepository
 {
@@ -27,13 +27,19 @@ public class AuthRepository(HauntDbContext dbContext) : IAuthRepository
             IsEmailUser = accessToken.IsEmailUser
         });
 
-        var result = await _dbContext.SaveChangesAsync(); // ✅ this is now awaited properly
+        var result = await _dbContext.SaveChangesAsync(); 
         return result.ToString();
     }
 
-    public async Task<User> GetUserAsync(string email)
+    public async Task<(User User, decimal balance)> GetUserAsync(string email)
     {
-        var res= await _dbContext.Users.FirstOrDefaultAsync(o => o.Email.Equals(email));
-        return res;
+        decimal balance = 0;
+        var res = await _dbContext.Users.FirstOrDefaultAsync(o => o.Email.Equals(email));
+
+        if (res != null)
+            balance = await _dbContext.WalletTransactions
+                       .Where(t => t.UserId == res.Id)
+                       .SumAsync(t => t.Type == "CR" ? t.Amount : -t.Amount);
+        return (res,balance);
     }
 }

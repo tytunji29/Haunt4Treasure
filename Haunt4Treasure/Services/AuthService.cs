@@ -1,4 +1,6 @@
-﻿using Haunt4Treasure.Helpers;
+﻿using Azure.Core;
+using Google.Apis.PeopleService.v1.Data;
+using Haunt4Treasure.Helpers;
 using Haunt4Treasure.Models;
 using Haunt4Treasure.Repository;
 using Microsoft.Extensions.Configuration.UserSecrets;
@@ -15,14 +17,14 @@ namespace Haunt4Treasure.RegistrationFlow
     public interface IAuthService
     {
         Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
-        //Task<EncryptedPayload> ProcessUserLogin(EncryptedPayload encryptedData);
+        Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
     }
     public class AuthService(IConfiguration config, IAuthRepository authRepo, IAuthenticationHelpers authHelper) : IAuthService
     {
         private readonly IConfiguration _config = config;
         private readonly IAuthenticationHelpers _authHelper = authHelper;
         private readonly IAuthRepository _authRepo = authRepo;
-       
+
         public async Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source)
         {
             var user = new User();
@@ -31,7 +33,7 @@ namespace Haunt4Treasure.RegistrationFlow
             try
             {
                 var tokD = new UserTokenDetails();
-                user = await _authRepo.GetUserAsync(request.Email);
+                (user, decimal balance) = await _authRepo.GetUserAsync(request.Email);
                 if (user == null)
                 {
                     var newUser = new AddUserRequest();
@@ -104,6 +106,7 @@ namespace Haunt4Treasure.RegistrationFlow
                     Message = $"Login Is Successful",
                     Data = new LoginResponse
                     {
+                        Balance = balance,
                         FullName = $"{request.FirstName} {request.LastName}",
                         Token = token,
                         RefreshToken = refreshToken,
@@ -120,8 +123,60 @@ namespace Haunt4Treasure.RegistrationFlow
                 };
             }
         }
+        public async Task<ReturnObject> ProcessUserLogin(LoginModel request)
+        {
+            var user = new User();
+            var userInfo = new ReturnObject();
+            var userId = "";
+            try
+            {
+                var tokD = new UserTokenDetails();
+                (user, decimal balance) = await _authRepo.GetUserAsync(request.Email);
+                if (user == null)
+                {
+                    return new ReturnObject
+                    {
+                        Status = false,
+                        Message = $"An Error Occured During Login"
+                    };
+                }
+                tokD = new UserTokenDetails
+                {
+                    Email = request.Email,
+                    FullName = $"{user.FirstName} {user.LastName}",
+                    PhoneNumber = user.PhoneNumber ?? "",
+                    PictureUrl = user.ProfileImagePath ?? "",
+                    Token = _config["XapiKey"] ?? ""
+                };
 
+                tokD.LoginChannel = "Internal";
+                tokD.ModeType = "Internal";
 
+                // 4. Generate JWT token
+                (string token, string refreshToken, string time) = CreateAccessToken(tokD);
+                return new ReturnObject
+                {
+                    Status = true,
+                    Message = $"Login Is Successful",
+                    Data = new LoginResponse
+                    {
+                        Balance = balance,
+                        FullName = $"{user.FirstName} {user.LastName}",
+                        Token = token,
+                        RefreshToken = refreshToken,
+                        Expiration = time
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ReturnObject
+                {
+                    Status = false,
+                    Message = $"An Error Occured During Login"
+                };
+            }
+        }
         //Generating access token
         private (string token, string refreshToken, string expiration) CreateAccessToken(UserTokenDetails user)
         {
@@ -175,9 +230,7 @@ namespace Haunt4Treasure.RegistrationFlow
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
-
-
-        public static class PasswordHelper
+        private static class PasswordHelper
         {
             public static (string hash, string salt) CreatePasswordHash(string password)
             {

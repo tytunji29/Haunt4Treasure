@@ -31,7 +31,7 @@ public class AuthController(IAuthService service) : ControllerBase
                 ProfileImagePath = payload.Picture,
                 AgeConfirmed = true, // Assuming age confirmation is true for external users
             };
-            var res = await _googleService.ProcessInternalUser(rec,2);
+            var res = await _googleService.ProcessInternalUser(rec, 2);
 
             return Ok(res);
         }
@@ -42,11 +42,24 @@ public class AuthController(IAuthService service) : ControllerBase
     }
 
     [HttpPost("Internal")]
-    public async Task<IActionResult> InternalLogin([FromBody] ExternalInternalRequest request)
+    public async Task<IActionResult> InternalSignUp([FromBody] ExternalInternalRequest request)
     {
         try
         {
-            var res = await _googleService.ProcessInternalUser(request,1);
+            var res = await _googleService.ProcessInternalUser(request, 1);
+            return Ok(res);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+    [HttpPost("SignIn")]
+    public async Task<IActionResult> SignIn([FromBody] LoginModel request)
+    {
+        try
+        {
+            var res = await _googleService.ProcessUserLogin(request);
             return Ok(res);
         }
         catch (Exception ex)

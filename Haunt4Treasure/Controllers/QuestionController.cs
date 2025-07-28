@@ -75,30 +75,71 @@ public class QuestionController : ControllerBase
     [HttpGet("GetQuestions")]
     public async Task<ReturnObject> GetQuestions()
     {
-        var rawQuery = @"SELECT TOP 25 *
-FROM Questions
-WHERE Text NOT LIKE '%\u0022%'
-  AND Text NOT LIKE '%\u00AE%'
-  AND Text NOT LIKE '%\u2122%'
-  AND Text NOT LIKE '%\u0027%'
-  AND Options NOT LIKE '%\u0027%'
-  AND Options NOT LIKE '%\u0022%'
-  AND Options NOT LIKE '%\u00AE%'
-  AND Options NOT LIKE '%\u2122%'
-ORDER BY NEWID();";
-        var rawQuestions = await _dbContext.Set<QuestionRawDto>()
-        .FromSqlRaw(rawQuery)
-        .ToListAsync();
+        //sql
+        //        var rawQuery = @"SELECT TOP 25 *
+        //FROM Questions
+        //WHERE Text NOT LIKE '%\u0022%'
+        //  AND Text NOT LIKE '%\u00AE%'
+        //  AND Text NOT LIKE '%\u2122%'
+        //  AND Text NOT LIKE '%\u0027%'
+        //  AND Options NOT LIKE '%\u0027%'
+        //  AND Options NOT LIKE '%\u0022%'
+        //  AND Options NOT LIKE '%\u00AE%'
+        //  AND Options NOT LIKE '%\u2122%'
+        //ORDER BY NEWID();";
 
-        var questions = rawQuestions.Select(q => new Question
+
+        var questions =await  _dbContext.Questions.GroupBy(q => q.Text)           // group by question text
+    .Select(g => g.First())         // pick first question from each group
+    .OrderBy(q => Guid.NewGuid())   // shuffle randomly
+    .Take(25)
+    .ToListAsync();
+        //        var rawQuery = @"SELECT *
+        //FROM public.Questions
+        //WHERE text NOT LIKE '%""%'      -- \u0022 = double quote
+        //  AND text NOT LIKE '%®%'      -- \u00AE = registered trademark
+        //  AND text NOT LIKE '%™%'      -- \u2122 = trademark
+        //  AND text NOT LIKE '%''%'     -- \u0027 = single quote
+        //  AND options NOT LIKE '%''%'
+        //  AND options NOT LIKE '%""%' 
+        //  AND options NOT LIKE '%®%' 
+        //  AND options NOT LIKE '%™%' 
+        //ORDER BY RANDOM()
+        //LIMIT 25;
+        //";
+        //        var rawQuestions = await _dbContext.Set<QuestionRawDto>()
+        //        .FromSqlRaw(rawQuery)
+        //        .ToListAsync();
+
+        //        var questions = rawQuestions.Select(q => new Question
+        //        {
+        //            Id = q.Id,
+        //            Text = q.Text,
+        //            Options = JsonSerializer.Deserialize<List<string>>(q.Options ?? "[]"),
+        //            CorrectAnswer = q.CorrectAnswer,
+        //            Category = q.Category,
+        //            Difficulty = q.Difficulty
+        //        }).ToList();
+
+        var res = new ReturnObject
         {
-            Id = q.Id,
-            Text = q.Text,
-            Options = JsonSerializer.Deserialize<List<string>>(q.Options ?? "[]"),
-            CorrectAnswer = q.CorrectAnswer,
-            Category = q.Category,
-            Difficulty = q.Difficulty
-        }).ToList();
+            Data = questions,
+            Status = true,
+            Message = "Record Found Successfully"
+        };
+        return res;
+    }
+
+    [HttpGet("GetSampleQuestions")]
+    public async Task<ReturnObject> GetSampleQuestions()
+    {
+        var questions = await _dbContext.Questions
+         .Where(q => q.Difficulty.ToLower() == "easy")
+            .GroupBy(q => q.Text)           // group by question text
+    .Select(g => g.First())         // pick first question from each group
+    .OrderBy(q => Guid.NewGuid())   // shuffle randomly
+    .Take(5)
+    .ToListAsync();
 
         var res = new ReturnObject
         {
