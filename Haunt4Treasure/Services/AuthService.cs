@@ -57,6 +57,7 @@ namespace Haunt4Treasure.RegistrationFlow
                             var (hash, salt) = PasswordHelper.CreatePasswordHash(request.Password);
                             newUser.IsEmailUser = false;
                             newUser.Password = hash;
+                            newUser.PasswordSalt = salt;
                             tokD.LoginChannel = "Internal";
                             tokD.ModeType = "Internal";
                             break;
@@ -137,9 +138,22 @@ namespace Haunt4Treasure.RegistrationFlow
                     return new ReturnObject
                     {
                         Status = false,
-                        Message = $"An Error Occured During Login"
+                        Message = $"User Not Found"
                     };
                 }
+                if(!user.IsEmailUser)
+                {
+                    // Verify password
+                    if (!PasswordHelper.VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt))
+                    {
+                        return new ReturnObject
+                        {
+                            Status = false,
+                            Message = $"Invalid Login Credential"
+                        };
+                    }
+                }
+               
                 tokD = new UserTokenDetails
                 {
                     Email = request.Email,
@@ -151,6 +165,7 @@ namespace Haunt4Treasure.RegistrationFlow
 
                 tokD.LoginChannel = "Internal";
                 tokD.ModeType = "Internal";
+                tokD.ModeId = user.Id.ToString();
 
                 // 4. Generate JWT token
                 (string token, string refreshToken, string time) = CreateAccessToken(tokD);

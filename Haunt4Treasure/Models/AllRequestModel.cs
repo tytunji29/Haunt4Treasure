@@ -15,6 +15,7 @@ public class AddUserRequest
     public string Email { get; set; }
     public string PhoneNumber { get; set; }
     public string Password { get; set; }
+    public string PasswordSalt { get; set; }
     public string? ProfileImagePath { get; set; }
     public bool AgeConfirmed { get; set; }
     public bool IsEmailUser { get; set; }

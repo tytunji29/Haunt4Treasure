@@ -22,6 +22,7 @@ public class AuthRepository(HauntDbContext dbContext) : IAuthRepository
             Email = accessToken.Email,
             PhoneNumber = accessToken.PhoneNumber,
             PasswordHash = accessToken.Password,
+            PasswordSalt= accessToken.PasswordSalt,
             ProfileImagePath = accessToken.ProfileImagePath,
             AgeConfirmed = accessToken.AgeConfirmed,
             IsEmailUser = accessToken.IsEmailUser

@@ -11,6 +11,7 @@ public class User
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
+    public string PasswordSalt { get; set; } = string.Empty;
     public string ProfileImagePath { get; set; } = string.Empty;
     public bool AgeConfirmed { get; set; }
     public bool IsEmailUser { get; set; }
