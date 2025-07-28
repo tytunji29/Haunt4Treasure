@@ -17,6 +17,7 @@ public class AuthRepository(HauntDbContext dbContext) : IAuthRepository
     {
         _dbContext.Users.Add(new User
         {
+            Id = Guid.NewGuid(),
             FirstName = accessToken.FirstName,
             LastName = accessToken.LastName,
             Email = accessToken.Email,

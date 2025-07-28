@@ -37,7 +37,7 @@ namespace Haunt4Treasure.RegistrationFlow
                 if (user == null)
                 {
                     var newUser = new AddUserRequest();
-
+                   
                     newUser.Email = request.Email;
                     newUser.FirstName = request.FirstName;
                     newUser.LastName = request.LastName;
@@ -199,9 +199,8 @@ namespace Haunt4Treasure.RegistrationFlow
             var claims = new List<Claim>
             {
                 new Claim("PictureUrl", user.PictureUrl ?? ""),
-                new Claim("ModeId", user.ModeId),
+                new Claim("UserId", user.ModeId),
                 new Claim("ModeType", user.ModeType),
-                //new Claim("Token", user.Token),
                 new Claim("Email", user.Email),
                 new Claim("Channel", user.LoginChannel),
                 new Claim("ExpiryDate", DateTime.UtcNow.AddHours(int.Parse(_config["Jwt:AccessTime"]!)).ToString()),

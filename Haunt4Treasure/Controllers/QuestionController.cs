@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using Haunt4Treasure.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -71,56 +72,38 @@ public class QuestionController : ControllerBase
         return Ok(new { message = "Questions added successfully." });
     }
 
-
-    [HttpGet("GetQuestions")]
-    public async Task<ReturnObject> GetQuestions()
+    [Authorize]
+    [HttpPost("GetQuestions")]
+    public async Task<ReturnObject> GetQuestions(decimal amountStaked)
     {
-        //sql
-        //        var rawQuery = @"SELECT TOP 25 *
-        //FROM Questions
-        //WHERE Text NOT LIKE '%\u0022%'
-        //  AND Text NOT LIKE '%\u00AE%'
-        //  AND Text NOT LIKE '%\u2122%'
-        //  AND Text NOT LIKE '%\u0027%'
-        //  AND Options NOT LIKE '%\u0027%'
-        //  AND Options NOT LIKE '%\u0022%'
-        //  AND Options NOT LIKE '%\u00AE%'
-        //  AND Options NOT LIKE '%\u2122%'
-        //ORDER BY NEWID();";
-
-
+        //take this to repo where you save the game session and exact the userId from the token
+        var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return new ReturnObject
+            {
+                Status = false,
+                Message = "User not authenticated"
+            };
+        }
+        var gameSession = new GameSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.Parse(userId),
+            AmountStaked = amountStaked,
+            Status = "InProgress",
+            UsedSkip = false,
+            UsedFiftyFifty = false,
+            StartedAt = DateTime.UtcNow,
+            NumberOfAnsweredGame = 0
+        };
+        _dbContext.GameSessions.Add(gameSession);
+        await _dbContext.SaveChangesAsync();
         var questions =await  _dbContext.Questions.GroupBy(q => q.Text)           // group by question text
     .Select(g => g.First())         // pick first question from each group
     .OrderBy(q => Guid.NewGuid())   // shuffle randomly
     .Take(25)
     .ToListAsync();
-        //        var rawQuery = @"SELECT *
-        //FROM public.Questions
-        //WHERE text NOT LIKE '%""%'      -- \u0022 = double quote
-        //  AND text NOT LIKE '%®%'      -- \u00AE = registered trademark
-        //  AND text NOT LIKE '%™%'      -- \u2122 = trademark
-        //  AND text NOT LIKE '%''%'     -- \u0027 = single quote
-        //  AND options NOT LIKE '%''%'
-        //  AND options NOT LIKE '%""%' 
-        //  AND options NOT LIKE '%®%' 
-        //  AND options NOT LIKE '%™%' 
-        //ORDER BY RANDOM()
-        //LIMIT 25;
-        //";
-        //        var rawQuestions = await _dbContext.Set<QuestionRawDto>()
-        //        .FromSqlRaw(rawQuery)
-        //        .ToListAsync();
-
-        //        var questions = rawQuestions.Select(q => new Question
-        //        {
-        //            Id = q.Id,
-        //            Text = q.Text,
-        //            Options = JsonSerializer.Deserialize<List<string>>(q.Options ?? "[]"),
-        //            CorrectAnswer = q.CorrectAnswer,
-        //            Category = q.Category,
-        //            Difficulty = q.Difficulty
-        //        }).ToList();
-
         var res = new ReturnObject
         {
             Data = questions,
