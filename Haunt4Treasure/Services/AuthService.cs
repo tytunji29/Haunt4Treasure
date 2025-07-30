@@ -37,7 +37,6 @@ namespace Haunt4Treasure.RegistrationFlow
                 if (user == null)
                 {
                     var newUser = new AddUserRequest();
-                   
                     newUser.Email = request.Email;
                     newUser.FirstName = request.FirstName;
                     newUser.LastName = request.LastName;

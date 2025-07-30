@@ -1,9 +1,12 @@
 using System;
+using System.Text;
 using Haunt4Treasure.Helpers;
 using Haunt4Treasure.Models;
 using Haunt4Treasure.RegistrationFlow;
 using Haunt4Treasure.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +47,28 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+var jwtKey = builder.Configuration["Jwt:Key"]; // Set this in appsettings.json or Render env
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false; // for dev only
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+});
 
 builder.Services.AddScoped<IAuthenticationHelpers, AuthenticationHelpers>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
@@ -83,6 +107,7 @@ app.UseSwaggerUI(c =>
 // Middleware
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+app.UseAuthentication(); // ?? This MUST come before UseAuthorization
 app.UseAuthorization();
 app.MapControllers();
 

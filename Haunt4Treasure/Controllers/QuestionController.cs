@@ -99,9 +99,9 @@ public class QuestionController : ControllerBase
         };
         _dbContext.GameSessions.Add(gameSession);
         await _dbContext.SaveChangesAsync();
-        var questions =await  _dbContext.Questions.GroupBy(q => q.Text)           // group by question text
-    .Select(g => g.First())         // pick first question from each group
-    .OrderBy(q => Guid.NewGuid())   // shuffle randomly
+        var questions = await _dbContext.Questions.GroupBy(q => q.Text)
+    .Select(g => g.First())
+    .OrderBy(q => Guid.NewGuid())
     .Take(25)
     .ToListAsync();
         var res = new ReturnObject
@@ -118,9 +118,9 @@ public class QuestionController : ControllerBase
     {
         var questions = await _dbContext.Questions
          .Where(q => q.Difficulty.ToLower() == "easy")
-            .GroupBy(q => q.Text)           // group by question text
-    .Select(g => g.First())         // pick first question from each group
-    .OrderBy(q => Guid.NewGuid())   // shuffle randomly
+            .GroupBy(q => q.Text)
+    .Select(g => g.First())
+    .OrderBy(q => Guid.NewGuid())
     .Take(5)
     .ToListAsync();
 

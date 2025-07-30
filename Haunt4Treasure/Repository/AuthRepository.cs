@@ -15,7 +15,7 @@ public class AuthRepository(HauntDbContext dbContext) : IAuthRepository
     private readonly HauntDbContext _dbContext = dbContext;
     public async Task<string> AddUserAsync(AddUserRequest accessToken)
     {
-        _dbContext.Users.Add(new User
+        var user = new User
         {
             Id = Guid.NewGuid(),
             FirstName = accessToken.FirstName,
@@ -23,14 +23,15 @@ public class AuthRepository(HauntDbContext dbContext) : IAuthRepository
             Email = accessToken.Email,
             PhoneNumber = accessToken.PhoneNumber,
             PasswordHash = accessToken.Password,
-            PasswordSalt= accessToken.PasswordSalt,
+            PasswordSalt = accessToken.PasswordSalt,
             ProfileImagePath = accessToken.ProfileImagePath,
             AgeConfirmed = accessToken.AgeConfirmed,
             IsEmailUser = accessToken.IsEmailUser
-        });
+        };
 
-        var result = await _dbContext.SaveChangesAsync(); 
-        return result.ToString();
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+        return user.Id.ToString();
     }
 
     public async Task<(User User, decimal balance)> GetUserAsync(string email)
