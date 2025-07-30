@@ -31,7 +31,7 @@ public class ExternalInternalRequest
     public bool AgeConfirmed { get; set; }
 }
 #endregion
-
+public record GameCashOut(Guid sessionId, bool fiftyfifty, bool skipped, int numberOfAnsweredQuestions, decimal cashoutAmount);
 public class LoginModel
 {
     public string Email { get; set; }

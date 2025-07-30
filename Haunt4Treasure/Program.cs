@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using Haunt4Treasure.Helpers;
 using Haunt4Treasure.Models;
 using Haunt4Treasure.RegistrationFlow;
 using Haunt4Treasure.Repository;
@@ -70,9 +69,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddScoped<IAuthenticationHelpers, AuthenticationHelpers>();
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAllRepository, AllRepository>();
+builder.Services.AddScoped<IAllService, AllService>();
 
 //builder.Services.AddDbContext<HauntDbContext>(options =>
 //    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

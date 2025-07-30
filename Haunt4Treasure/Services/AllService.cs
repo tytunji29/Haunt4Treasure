@@ -1,11 +1,8 @@
-﻿using Azure.Core;
-using Google.Apis.PeopleService.v1.Data;
-using Haunt4Treasure.Helpers;
+﻿
 using Haunt4Treasure.Models;
 using Haunt4Treasure.Repository;
-using Microsoft.Extensions.Configuration.UserSecrets;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -14,17 +11,21 @@ using System.Text.Json;
 
 namespace Haunt4Treasure.RegistrationFlow
 {
-    public interface IAuthService
+    public interface IAllService
     {
         Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
         Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
+        Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked);
+        Task<ReturnObject> ProcessSampleQuestions();
+        Task<ReturnObject> TopUpWallet(string userId, decimal amount);
+        Task<ReturnObject> ChangePassword(LoginModel encryptedData);
+        Task<ReturnObject> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
     }
-    public class AuthService(IConfiguration config, IAuthRepository authRepo, IAuthenticationHelpers authHelper) : IAuthService
+    public class AllService(IConfiguration config, IAllRepository authRepo) : IAllService
     {
         private readonly IConfiguration _config = config;
-        private readonly IAuthenticationHelpers _authHelper = authHelper;
-        private readonly IAuthRepository _authRepo = authRepo;
-
+        private readonly IAllRepository _authRepo = authRepo;
+        #region Authorization Flow
         public async Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source)
         {
             var user = new User();
@@ -123,6 +124,52 @@ namespace Haunt4Treasure.RegistrationFlow
                 };
             }
         }
+        public async Task<ReturnObject> ChangePassword(LoginModel request)
+        {
+            var user = new User();
+            var userInfo = new ReturnObject();
+            var userId = "";
+            try
+            {
+                var tokD = new UserTokenDetails();
+                (user, decimal balance) = await _authRepo.GetUserAsync(request.Email);
+                if (user == null)
+                {
+                    return new ReturnObject
+                    {
+                        Status = false,
+                        Message = $"User Not Found"
+                    };
+                }
+                if (user.IsEmailUser)
+                {
+                    return new ReturnObject
+                    {
+                        Status = false,
+                        Message = $"Email User Cant Change Password"
+                    };
+                }
+
+                var (hash, salt) = PasswordHelper.CreatePasswordHash(request.Password);
+                user.PasswordHash = hash;
+                user.PasswordSalt = salt;
+                await _authRepo.UpdateUserAsync(user);
+                return new ReturnObject
+                {
+                    Status = true,
+                    Message = $"Password Changed Successful",
+                    Data = null
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ReturnObject
+                {
+                    Status = false,
+                    Message = $"An Error Occured During Login"
+                };
+            }
+        }
         public async Task<ReturnObject> ProcessUserLogin(LoginModel request)
         {
             var user = new User();
@@ -140,7 +187,7 @@ namespace Haunt4Treasure.RegistrationFlow
                         Message = $"User Not Found"
                     };
                 }
-                if(!user.IsEmailUser)
+                if (!user.IsEmailUser)
                 {
                     // Verify password
                     if (!PasswordHelper.VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt))
@@ -152,7 +199,7 @@ namespace Haunt4Treasure.RegistrationFlow
                         };
                     }
                 }
-               
+
                 tokD = new UserTokenDetails
                 {
                     Email = request.Email,
@@ -192,6 +239,84 @@ namespace Haunt4Treasure.RegistrationFlow
             }
         }
         //Generating access token
+        #endregion
+        #region Questions
+        public async Task<ReturnObject> ProcessSampleQuestions()
+        {
+            var questions = await _authRepo.GetSampleQuestionsAsync();
+            var res = new ReturnObject
+            {
+                Data = questions,
+                Status = true,
+                Message = "Record Found Successfully"
+            };
+            return res;
+        }
+        public async Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked)
+        {
+            var gameSession = new GameSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.Parse(userId),
+                AmountStaked = amountStaked,
+                Status = "InProgress",
+                UsedSkip = false,
+                UsedFiftyFifty = false,
+                StartedAt = DateTime.UtcNow,
+                NumberOfAnsweredGame = 0
+            };
+            var questions = await _authRepo.GetQuestionsAsync(gameSession);
+
+            var res = new ReturnObject
+            {
+                Data = new { questions = questions, sessionId = gameSession.Id },
+                Status = true,
+                Message = "Record Found Successfully"
+            };
+            return res;
+        }
+        #endregion
+
+        #region Money Flow
+        //call the topup wallet method from the repository
+        public async Task<ReturnObject> TopUpWallet(string userId, decimal amount)
+        {
+            var res = await _authRepo.TopUpWalletAsync(Guid.Parse(userId), amount);
+            if (res)
+            {
+                return new ReturnObject
+                {
+                    Status = true,
+                    Message = "Wallet Top Up Successful"
+                };
+            }
+            return new ReturnObject
+            {
+                Status = false,
+                Message = "Failed to Top Up Wallet"
+            };
+        }
+
+        // Update Game Session Cashout
+        public async Task<ReturnObject> UpdateGameSessionCashoutAsync(GameCashOut cashOut)
+        {
+            var res = await _authRepo.UpdateGameSessionCashoutAsync(cashOut);
+            if (res)
+            {
+                return new ReturnObject
+                {
+                    Status = true,
+                    Message = "Game Session Cashout Updated Successfully"
+                };
+            }
+            return new ReturnObject
+            {
+                Status = false,
+                Message = "Failed to Update Game Session Cashout"
+            };
+        }
+        #endregion
+        #region private methods
         private (string token, string refreshToken, string expiration) CreateAccessToken(UserTokenDetails user)
         {
             // Define claims
@@ -287,5 +412,6 @@ namespace Haunt4Treasure.RegistrationFlow
                 return result;
             }
         }
+        #endregion
     }
 }

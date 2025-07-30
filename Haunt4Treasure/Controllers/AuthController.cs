@@ -2,16 +2,17 @@
 using Google.Apis.Auth;
 using Haunt4Treasure.Models;
 using Haunt4Treasure.RegistrationFlow;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Haunt4Treasure.Controllers;
-
+[AllowAnonymous]
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IAuthService service) : ControllerBase
+public class AuthController(IAllService service) : ControllerBase
 {
-    private readonly IAuthService _googleService = service;
+    private readonly IAllService _googleService = service;
     [HttpPost("google")]
     public async Task<IActionResult> GoogleLoginSignUp([FromBody] ExternalLoginRequest idToken)
     {
@@ -60,6 +61,19 @@ public class AuthController(IAuthService service) : ControllerBase
         try
         {
             var res = await _googleService.ProcessUserLogin(request);
+            return Ok(res);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+    [HttpPost("ChangePassword")]
+    public async Task<IActionResult> ChangePassword([FromBody] LoginModel request)
+    {
+        try
+        {
+            var res = await _googleService.ChangePassword(request);
             return Ok(res);
         }
         catch (Exception ex)
