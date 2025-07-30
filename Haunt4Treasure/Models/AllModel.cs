@@ -58,6 +58,14 @@ public class Wallet
     public User User { get; set; }
 }
 
+public class QuestionCategory
+{
+    [Key]
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string ShortDescription { get; set; }
+    public string ImageUrl { get; set; }
+}
 // WalletTransaction Entity
 public class WalletTransaction
 {

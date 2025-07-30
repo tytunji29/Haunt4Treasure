@@ -15,8 +15,9 @@ namespace Haunt4Treasure.RegistrationFlow
     {
         Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
         Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
-        Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked);
+        Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked, Guid? category);
         Task<ReturnObject> ProcessSampleQuestions();
+        Task<ReturnObject> ProcessSampleQuestionsCategories();
         Task<ReturnObject> TopUpWallet(string userId, decimal amount);
         Task<ReturnObject> ChangePassword(LoginModel encryptedData);
         Task<ReturnObject> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
@@ -99,6 +100,8 @@ namespace Haunt4Treasure.RegistrationFlow
                             break;
                     }
                 }
+
+                var cat = await _authRepo.ProcessSampleQuestionsCategories();
                 // 4. Generate JWT token
                 (string token, string refreshToken, string time) = CreateAccessToken(tokD);
                 return new ReturnObject
@@ -111,7 +114,8 @@ namespace Haunt4Treasure.RegistrationFlow
                         FullName = $"{request.FirstName} {request.LastName}",
                         Token = token,
                         RefreshToken = refreshToken,
-                        Expiration = time
+                        Expiration = time,
+                        Category = cat
                     }
                 };
             }
@@ -212,7 +216,7 @@ namespace Haunt4Treasure.RegistrationFlow
                 tokD.LoginChannel = "Internal";
                 tokD.ModeType = "Internal";
                 tokD.ModeId = user.Id.ToString();
-
+                var cat = await _authRepo.ProcessSampleQuestionsCategories();
                 // 4. Generate JWT token
                 (string token, string refreshToken, string time) = CreateAccessToken(tokD);
                 return new ReturnObject
@@ -225,7 +229,8 @@ namespace Haunt4Treasure.RegistrationFlow
                         FullName = $"{user.FirstName} {user.LastName}",
                         Token = token,
                         RefreshToken = refreshToken,
-                        Expiration = time
+                        Expiration = time,
+                        Category = cat
                     }
                 };
             }
@@ -252,7 +257,7 @@ namespace Haunt4Treasure.RegistrationFlow
             };
             return res;
         }
-        public async Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked)
+        public async Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked,Guid? category)
         {
             var gameSession = new GameSession
             {
@@ -265,7 +270,7 @@ namespace Haunt4Treasure.RegistrationFlow
                 StartedAt = DateTime.UtcNow,
                 NumberOfAnsweredGame = 0
             };
-            var questions = await _authRepo.GetQuestionsAsync(gameSession);
+            var questions = await _authRepo.GetQuestionsAsync(gameSession, category);
 
             var res = new ReturnObject
             {
@@ -275,18 +280,31 @@ namespace Haunt4Treasure.RegistrationFlow
             };
             return res;
         }
-        #endregion
 
+
+        public async Task<ReturnObject> ProcessSampleQuestionsCategories()
+        {
+            var categories = await _authRepo.ProcessSampleQuestionsCategories();
+            return new ReturnObject
+            {
+                Data = categories,
+                Status = true,
+                Message = "Categories Found Successfully"
+            };
+        }
+
+        #endregion
         #region Money Flow
         //call the topup wallet method from the repository
         public async Task<ReturnObject> TopUpWallet(string userId, decimal amount)
         {
             var res = await _authRepo.TopUpWalletAsync(Guid.Parse(userId), amount);
-            if (res)
+            if (res>0)
             {
                 return new ReturnObject
                 {
                     Status = true,
+                    Data =res,
                     Message = "Wallet Top Up Successful"
                 };
             }
@@ -368,6 +386,7 @@ namespace Haunt4Treasure.RegistrationFlow
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
+
         private static class PasswordHelper
         {
             public static (string hash, string salt) CreatePasswordHash(string password)

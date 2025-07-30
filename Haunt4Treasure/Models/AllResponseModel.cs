@@ -48,6 +48,7 @@ public class LoginResponse
     public string Token { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
     public string Expiration { get; set; } = string.Empty;
+    public List<QuestionCategory> Category { get; set; }
 }
 public class TriviaQuestionDto
 {

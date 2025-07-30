@@ -69,7 +69,7 @@ public class QuestionController(IAllService service, IHttpClientFactory httpClie
 
     [Authorize]
     [HttpPost("GetQuestions")]
-    public async Task<ReturnObject> GetQuestions(decimal amountStaked)
+    public async Task<ReturnObject> GetQuestions(decimal amountStaked, Guid? category)
     {
         //take this to repo where you save the game session and exact the userId from the token
         var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
@@ -81,10 +81,15 @@ public class QuestionController(IAllService service, IHttpClientFactory httpClie
                 Message = "User not authenticated"
             };
         }
-        var res = await _allService.ProcessQuestions(userId, amountStaked);
+        var res = await _allService.ProcessQuestions(userId, amountStaked,category);
         return res;
     }
 
+    [HttpGet("GetQuestionCategory")]
+    public async Task<ReturnObject> GetQuestionCategory()
+    {
+        return await _allService.ProcessSampleQuestionsCategories();
+    }
     [HttpGet("GetSampleQuestions")]
     public async Task<ReturnObject> GetSampleQuestions()
     {

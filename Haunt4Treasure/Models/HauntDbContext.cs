@@ -12,6 +12,7 @@ public class HauntDbContext : DbContext
     public DbSet<Question> Questions { get; set; }
     public DbSet<GameSession> GameSessions { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
+    public DbSet<QuestionCategory> QuestionCategory { get; set; }
     public DbSet<WalletTransaction> WalletTransactions { get; set; }
     public DbSet<Withdrawal> Withdrawals { get; set; }
     public DbSet<WithdrawalBank> WithdrawalBanks { get; set; }

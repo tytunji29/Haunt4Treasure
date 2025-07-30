@@ -7,11 +7,12 @@ public interface IAllRepository
 {
     // Define methods for authentication operations
     Task<string> AddUserAsync(AddUserRequest accessToken);
-    Task<List<Question>> GetQuestionsAsync(GameSession gameSession);
+    Task<List<Question>> GetQuestionsAsync(GameSession gameSession, Guid? category);
     Task<List<Question>> GetSampleQuestionsAsync();
     Task<bool> UpdateUserAsync(User user);
+    Task<List<QuestionCategory>> ProcessSampleQuestionsCategories();
     Task<(User User, decimal balance)> GetUserAsync(string email);
-    Task<bool> TopUpWalletAsync(Guid userId, decimal amount);
+    Task<decimal> TopUpWalletAsync(Guid userId, decimal amount);
     Task<bool> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
 }
 public class AllRepository(HauntDbContext dbContext) : IAllRepository
@@ -61,7 +62,14 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
     }
     #endregion
     #region Question
-    public async Task<List<Question>> GetQuestionsAsync(GameSession gameSession)
+    public async Task<List<QuestionCategory>> ProcessSampleQuestionsCategories()
+    {
+        //select all the categories from the questions table but make RANDOM the first Item on the list
+        //so select the categories from the questions table and make the first item "RANDOM"
+        var res = await _dbContext.QuestionCategory.ToListAsync();
+        return res;
+    }
+    public async Task<List<Question>> GetQuestionsAsync(GameSession gameSession, Guid? category)
     {
         // update any existing game session with the same userId and status "InProgress"
         var existingSession = await _dbContext.GameSessions
@@ -97,14 +105,41 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
 
         // Save all changes in one call
         await _dbContext.SaveChangesAsync();
-
+        var questions = new List<Question>();
+        if (category.HasValue && category.Value != Guid.Empty)
+        {
+            var catName = await _dbContext.QuestionCategory
+                .Where(c => c.Id == category.Value)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync();
+            // Get 25 random, unique questions by text for the specified category
+            questions = await _dbContext.Questions
+               .Where(q => q.Category.Contains(catName))
+               .GroupBy(q => q.Text)
+               .Select(g => g.First())
+               .OrderBy(q => Guid.NewGuid())
+               .Take(25)
+               .ToListAsync();
+            if(questions.Count < 25)
+            {
+                // if the question not up to 25 select new quuestions and add to the questions list must be distinct
+                var additionalQuestions = await _dbContext.Questions
+                    .Where(q => !questions.Select(q => q.Text).Contains(q.Text))
+                    .GroupBy(q => q.Text)
+                    .Select(g => g.First())
+                    .OrderBy(q => Guid.NewGuid())
+                    .Take(25 - questions.Count)
+                    .ToListAsync();
+            }
+            return questions;
+        }
         // Get 25 random, unique questions by text
-        var questions = await _dbContext.Questions
-            .GroupBy(q => q.Text)
-            .Select(g => g.First())
-            .OrderBy(q => Guid.NewGuid())
-            .Take(25)
-            .ToListAsync();
+        questions = await _dbContext.Questions
+           .GroupBy(q => q.Text)
+           .Select(g => g.First())
+           .OrderBy(q => Guid.NewGuid())
+           .Take(25)
+           .ToListAsync();
 
         return questions;
     }
@@ -124,7 +159,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
 
     #region Payment
     //to topup the wallet and update the balance
-    public async Task<bool> TopUpWalletAsync(Guid userId, decimal amount)
+    public async Task<decimal> TopUpWalletAsync(Guid userId, decimal amount)
     {
         var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
         if (wallet == null)
@@ -144,7 +179,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         };
         _dbContext.WalletTransactions.Add(transaction);
         await _dbContext.SaveChangesAsync();
-        return true;
+        return wallet.Balance;
     }
 
     //to update the gamesession with the cashout amount by the sessionId
