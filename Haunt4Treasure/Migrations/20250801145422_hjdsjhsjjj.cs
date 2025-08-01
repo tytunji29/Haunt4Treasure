@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Haunt4Treasure.Migrations
 {
     /// <inheritdoc />
-    public partial class fgcvhbjnkml : Migration
+    public partial class hjdsjhsjjj : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,6 +25,20 @@ namespace Haunt4Treasure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AdminUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "QuestionCategory",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    ShortDescription = table.Column<string>(type: "text", nullable: false),
+                    ImageUrl = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_QuestionCategory", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -68,6 +82,7 @@ namespace Haunt4Treasure.Migrations
                     Email = table.Column<string>(type: "text", nullable: false),
                     PhoneNumber = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    PasswordSalt = table.Column<string>(type: "text", nullable: false),
                     ProfileImagePath = table.Column<string>(type: "text", nullable: false),
                     AgeConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     IsEmailUser = table.Column<bool>(type: "boolean", nullable: false),
@@ -256,6 +271,9 @@ namespace Haunt4Treasure.Migrations
 
             migrationBuilder.DropTable(
                 name: "GameSessions");
+
+            migrationBuilder.DropTable(
+                name: "QuestionCategory");
 
             migrationBuilder.DropTable(
                 name: "QuestionRawDto");

@@ -1,4 +1,5 @@
-﻿using Haunt4Treasure.Models;
+﻿using System.Text.Json;
+using Haunt4Treasure.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Haunt4Treasure.Repository;
@@ -14,6 +15,7 @@ public interface IAllRepository
     Task<(User User, decimal balance)> GetUserAsync(string email);
     Task<decimal> TopUpWalletAsync(Guid userId, decimal amount);
     Task<bool> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
+    Task<ReturnObject> PostQuestion(List<Question> ques);
 }
 public class AllRepository(HauntDbContext dbContext) : IAllRepository
 {
@@ -62,6 +64,14 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
     }
     #endregion
     #region Question
+
+    public async Task<ReturnObject> PostQuestion(List<Question> ques)
+    {
+            await _dbContext.Questions.AddRangeAsync(ques);
+            await _dbContext.SaveChangesAsync();
+        return new ReturnObject { Data=null, Status = true, Message = "Questions added successfully." };
+
+    }
     public async Task<List<QuestionCategory>> ProcessSampleQuestionsCategories()
     {
         //select all the categories from the questions table but make RANDOM the first Item on the list

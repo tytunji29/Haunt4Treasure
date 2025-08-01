@@ -13,6 +13,7 @@ namespace Haunt4Treasure.RegistrationFlow
 {
     public interface IAllService
     {
+        Task<ReturnObject> PostQuestion();
         Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
         Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
         Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked, Guid? category);
@@ -22,8 +23,10 @@ namespace Haunt4Treasure.RegistrationFlow
         Task<ReturnObject> ChangePassword(LoginModel encryptedData);
         Task<ReturnObject> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
     }
-    public class AllService(IConfiguration config, IAllRepository authRepo) : IAllService
+    public class AllService(IConfiguration config, IHttpClientFactory httpClientFactory, IAllRepository authRepo) : IAllService
     {
+
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _config = config;
         private readonly IAllRepository _authRepo = authRepo;
         #region Authorization Flow
@@ -246,6 +249,61 @@ namespace Haunt4Treasure.RegistrationFlow
         //Generating access token
         #endregion
         #region Questions
+
+        public async Task<ReturnObject> PostQuestion()
+        {
+            string apiUrl = $"https://opentdb.com/api.php?amount=49";
+
+            using var httpClient = new HttpClient();
+            string jsonResponse = await httpClient.GetStringAsync(apiUrl);
+
+            var root = JsonSerializer.Deserialize<TriviaApiResponse>(jsonResponse);
+            List<Question> Questions = new List<Question>();
+            if (root?.Results != null)
+            {
+                // using var db = new HauntDbContext();
+
+                foreach (var item in root.Results)
+                {
+                    var recordCount = item.IncorrectAnswers
+        .Select(ans => System.Net.WebUtility.HtmlDecode(ans))
+        .Append(System.Net.WebUtility.HtmlDecode(item.CorrectAnswer))
+        .Distinct()
+        .ToList();
+                    if (recordCount.Count() == 4)
+                    {
+                        var question = new Question
+                        {
+                            Id = Guid.NewGuid(),
+                            Text = System.Net.WebUtility.HtmlDecode(item.Question),
+                            CorrectAnswer = System.Net.WebUtility.HtmlDecode(item.CorrectAnswer),
+                            Category = System.Net.WebUtility.HtmlDecode(item.Category),
+                            Difficulty = item.Difficulty,
+                            Options = item.IncorrectAnswers
+            .Select(ans => System.Net.WebUtility.HtmlDecode(ans))
+            .Append(System.Net.WebUtility.HtmlDecode(item.CorrectAnswer))
+            .Distinct()
+            .ToList()
+                        };
+
+                        Questions.Add(question);
+                    }
+                }
+
+                var rec = await _authRepo.PostQuestion(Questions);
+                return rec;
+            }
+            else
+            {
+                return new ReturnObject
+                {
+                    Status = false,
+                    Message = "No Questions Found"
+                };
+            }
+
+        }
+
         public async Task<ReturnObject> ProcessSampleQuestions()
         {
             var questions = await _authRepo.GetSampleQuestionsAsync();
@@ -257,7 +315,7 @@ namespace Haunt4Treasure.RegistrationFlow
             };
             return res;
         }
-        public async Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked,Guid? category)
+        public async Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked, Guid? category)
         {
             var gameSession = new GameSession
             {
@@ -299,12 +357,12 @@ namespace Haunt4Treasure.RegistrationFlow
         public async Task<ReturnObject> TopUpWallet(string userId, decimal amount)
         {
             var res = await _authRepo.TopUpWalletAsync(Guid.Parse(userId), amount);
-            if (res>0)
+            if (res > 0)
             {
                 return new ReturnObject
                 {
                     Status = true,
-                    Data =res,
+                    Data = res,
                     Message = "Wallet Top Up Successful"
                 };
             }

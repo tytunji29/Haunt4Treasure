@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haunt4Treasure.Migrations
 {
     [DbContext(typeof(HauntDbContext))]
-    [Migration("20250728120346_fgcvhbjnkml")]
-    partial class fgcvhbjnkml
+    [Migration("20250801145422_hjdsjhsjjj")]
+    partial class hjdsjhsjjj
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -179,6 +179,29 @@ namespace Haunt4Treasure.Migrations
                     b.ToTable("Questions");
                 });
 
+            modelBuilder.Entity("Haunt4Treasure.QuestionCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ShortDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("QuestionCategory");
+                });
+
             modelBuilder.Entity("Haunt4Treasure.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -207,6 +230,10 @@ namespace Haunt4Treasure.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PasswordSalt")
                         .IsRequired()
                         .HasColumnType("text");
 
