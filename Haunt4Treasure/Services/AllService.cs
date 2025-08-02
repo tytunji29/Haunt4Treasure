@@ -307,9 +307,10 @@ namespace Haunt4Treasure.RegistrationFlow
         public async Task<ReturnObject> ProcessSampleQuestions()
         {
             var questions = await _authRepo.GetSampleQuestionsAsync();
+            var randomized = QuestionHelper.ShuffleQuestionOptions(questions);
             var res = new ReturnObject
             {
-                Data = questions,
+                Data = randomized,
                 Status = true,
                 Message = "Record Found Successfully"
             };

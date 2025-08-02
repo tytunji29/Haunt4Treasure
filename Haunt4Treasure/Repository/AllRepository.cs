@@ -165,6 +165,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
 
         return questions;
     }
+
     #endregion
 
     #region Payment
