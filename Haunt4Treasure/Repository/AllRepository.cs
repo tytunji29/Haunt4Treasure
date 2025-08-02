@@ -67,9 +67,9 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
 
     public async Task<ReturnObject> PostQuestion(List<Question> ques)
     {
-            await _dbContext.Questions.AddRangeAsync(ques);
-            await _dbContext.SaveChangesAsync();
-        return new ReturnObject { Data=null, Status = true, Message = "Questions added successfully." };
+        await _dbContext.Questions.AddRangeAsync(ques);
+        await _dbContext.SaveChangesAsync();
+        return new ReturnObject { Data = null, Status = true, Message = "Questions added successfully." };
 
     }
     public async Task<List<QuestionCategory>> ProcessSampleQuestionsCategories()
@@ -84,10 +84,12 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         // update any existing game session with the same userId and status "InProgress"
         var existingSession = await _dbContext.GameSessions
             .FirstOrDefaultAsync(gs => gs.UserId == gameSession.UserId);
-        existingSession.Status = "Completed";
-        existingSession.EndedAt = DateTime.UtcNow;
-        _dbContext.GameSessions.Update(existingSession);
-
+        if (existingSession != null)
+        {
+            existingSession.Status = "Completed";
+            existingSession.EndedAt = DateTime.UtcNow;
+            _dbContext.GameSessions.Update(existingSession);
+        }
         // Add the game session and update user's wallet balance in a single SaveChangesAsync call
         _dbContext.GameSessions.Add(gameSession);
 
@@ -109,6 +111,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
             UserId = gameSession.UserId,
             Amount = gameSession.AmountStaked,
             Type = "DR",
+            Status="Completed",
             CreatedAt = DateTime.UtcNow
         };
         _dbContext.WalletTransactions.Add(walletTransaction);
@@ -130,7 +133,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
                .OrderBy(q => Guid.NewGuid())
                .Take(25)
                .ToListAsync();
-            if(questions.Count < 25)
+            if (questions.Count < 25)
             {
                 // if the question not up to 25 select new quuestions and add to the questions list must be distinct
                 var additionalQuestions = await _dbContext.Questions
@@ -172,26 +175,58 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
     //to topup the wallet and update the balance
     public async Task<decimal> TopUpWalletAsync(Guid userId, decimal amount)
     {
-        var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
-        if (wallet == null)
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
         {
-            wallet = new Wallet { UserId = userId, Balance = 0 };
-            _dbContext.Wallets.Add(wallet);
+            var wallet = await _dbContext.Wallets
+                .AsTracking() // Ensure it's tracked for update
+                .FirstOrDefaultAsync(w => w.UserId == userId);
+
+            if (wallet == null)
+            {
+                wallet = new Wallet
+                {
+                  //  Id = Guid.NewGuid(), // Ensure you assign an ID if using one
+                    UserId = userId,
+                    Balance = 0
+                };
+                _dbContext.Wallets.Add(wallet);
+            }
+
+            wallet.Balance += amount;
+
+            // Optional: no need to call Update() since EF is tracking already.
+            // _dbContext.Wallets.Update(wallet); <-- not needed
+
+            var transactionRecord = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Amount = amount,
+                Status = "Completed",
+                Type = "CR",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.WalletTransactions.Add(transactionRecord);
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return wallet.Balance;
         }
-        wallet.Balance += amount;
-        _dbContext.Wallets.Update(wallet);
-        var transaction = new WalletTransaction
+        catch (DbUpdateConcurrencyException)
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Amount = amount,
-            Type = "CR",
-            CreatedAt = DateTime.UtcNow
-        };
-        _dbContext.WalletTransactions.Add(transaction);
-        await _dbContext.SaveChangesAsync();
-        return wallet.Balance;
+            await transaction.RollbackAsync();
+            throw new InvalidOperationException("Wallet update failed due to a concurrency conflict.");
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
+
 
     //to update the gamesession with the cashout amount by the sessionId
     public async Task<bool> UpdateGameSessionCashoutAsync(GameCashOut cashOut)
