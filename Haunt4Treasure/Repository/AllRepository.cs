@@ -265,28 +265,31 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         try
         {
             var wallet = _dbContext.Users
-                .Join(_dbContext.WithdrawalBanks,
-                    user => user.Id,
-                    wallet => wallet.UserId,
-                    (user, wallet) => new { user, wallet })
-                .Where(w => w.user.Id == userId)
-                .Select(w => new User
+        .Where(u => u.Id == userId)
+        .GroupJoin(
+            _dbContext.WithdrawalBanks,
+            user => user.Id,
+            bank => bank.UserId,
+            (user, banks) => new { user, banks }
+        )
+        .SelectMany(
+            ub => ub.banks.DefaultIfEmpty(), // ensures even users without bank info are included
+            (ub, bank) => new User
+            {
+                Id = ub.user.Id,
+                FirstName = ub.user.FirstName,
+                LastName = ub.user.LastName,
+                Email = ub.user.Email,
+                ProfileImagePath = ub.user.ProfileImagePath,
+                WithdrawalBank = bank == null ? null : new WithdrawalBank
                 {
-                    Id = w.user.Id,
-                    FirstName = w.user.FirstName,
-                    LastName = w.user.LastName,
-                    Email = w.user.Email,
-                    PhoneNumber = w.user.PhoneNumber,
-                    ProfileImagePath = w.user.ProfileImagePath,
-                    AgeConfirmed = w.user.AgeConfirmed,
-                    IsEmailUser = w.user.IsEmailUser,
-                    WithdrawalBank = new WithdrawalBank
-                    {
-                        BankName = w.wallet.BankName,
-                        AccountNumber = w.wallet.AccountNumber
-                    }
-                })
-                .FirstOrDefault();
+                    BankName = bank.BankName,
+                    AccountNumber = bank.AccountNumber
+                }
+            }
+        )
+        .FirstOrDefault();
+
             return wallet;
         }
         catch (Exception ex)
