@@ -41,7 +41,7 @@ public class ProfileController(IAllService service) : ControllerBase
                 Message = "User not authenticated"
             };
         }
-        var result = await _allService.UpdateUser(GC);
+        var result = await _allService.UpdateUser(GC,Guid.Parse(userId));
         return result;
     }
 }

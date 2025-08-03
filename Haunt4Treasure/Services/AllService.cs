@@ -16,7 +16,7 @@ namespace Haunt4Treasure.RegistrationFlow
     {
         Task<ReturnObject> PostQuestion();
         Task<ReturnObject> GetDetial(string userId);
-        Task<ReturnObject> UpdateUser(ProfileEdit userId);
+        Task<ReturnObject> UpdateUser(ProfileEdit rc,Guid userId);
         Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
         Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
         Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked, Guid? category);
@@ -271,11 +271,14 @@ namespace Haunt4Treasure.RegistrationFlow
                 Message = "No Record Found"
             };
         }
-        public async Task<ReturnObject> UpdateUser(ProfileEdit det)
+        public async Task<ReturnObject> UpdateUser(ProfileEdit det,Guid userId)
         {
-
-            string defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
-            var rec = await _authRepo.UpdateProfile(det.userId,defImage,det.bankName,det.accountNumber);
+            string defImage = "";
+            if (det.profilePic != null)
+            {
+                 defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
+            }
+            var rec = await _authRepo.UpdateProfile(userId,defImage,det.bankName,det.accountNumber);
             if (rec)
             {
                 return new ReturnObject
