@@ -1,4 +1,5 @@
 ﻿
+using Haunt4Treasure.Helpers;
 using Haunt4Treasure.Models;
 using Haunt4Treasure.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,8 @@ namespace Haunt4Treasure.RegistrationFlow
     public interface IAllService
     {
         Task<ReturnObject> PostQuestion();
+        Task<ReturnObject> GetDetial(string userId);
+        Task<ReturnObject> UpdateUser(ProfileEdit userId);
         Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
         Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
         Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked, Guid? category);
@@ -23,9 +26,9 @@ namespace Haunt4Treasure.RegistrationFlow
         Task<ReturnObject> ChangePassword(LoginModel encryptedData);
         Task<ReturnObject> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
     }
-    public class AllService(IConfiguration config, IHttpClientFactory httpClientFactory, IAllRepository authRepo) : IAllService
+    public class AllService(IConfiguration config, IHttpClientFactory httpClientFactory, IUploadFileService uploadFileService, IAllRepository authRepo) : IAllService
     {
-
+        private readonly IUploadFileService _uploadFileService = uploadFileService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _config = config;
         private readonly IAllRepository _authRepo = authRepo;
@@ -248,6 +251,45 @@ namespace Haunt4Treasure.RegistrationFlow
         }
         //Generating access token
         #endregion
+        #region User Profile
+        public async Task<ReturnObject> GetDetial(string userId)
+        {
+            var rec = await _authRepo.GetUserDetials(Guid.Parse(userId));
+            if (rec != null)
+            {
+                return new ReturnObject
+                {
+                    Status = true,
+                    Data = rec,
+                    Message = "Record Found Successfully"
+                };
+            }
+            return new ReturnObject
+            {
+                Status = false,
+                Message = "No Record Found"
+            };
+        }
+        public async Task<ReturnObject> UpdateUser(ProfileEdit det)
+        {
+
+            string defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
+            var rec = await _authRepo.UpdateProfile(det.userId,defImage,det.bankName,det.accountNumber);
+            if (rec)
+            {
+                return new ReturnObject
+                {
+                    Status = true,
+                    Message = "Record Updated Successfully"
+                };
+            }
+            return new ReturnObject
+            {
+                Status = false,
+                Message = "Failed to Update Record"
+            };
+        }
+        #endregion
         #region Questions
 
         public async Task<ReturnObject> PostQuestion()
@@ -330,17 +372,15 @@ namespace Haunt4Treasure.RegistrationFlow
                 NumberOfAnsweredGame = 0
             };
             var questions = await _authRepo.GetQuestionsAsync(gameSession, category);
-
+            var randomized = QuestionHelper.ShuffleQuestionOptions(questions);
             var res = new ReturnObject
             {
-                Data = new { questions = questions, sessionId = gameSession.Id },
+                Data = new { questions = randomized, sessionId = gameSession.Id },
                 Status = true,
                 Message = "Record Found Successfully"
             };
             return res;
         }
-
-
         public async Task<ReturnObject> ProcessSampleQuestionsCategories()
         {
             var categories = await _authRepo.ProcessSampleQuestionsCategories();
@@ -351,7 +391,6 @@ namespace Haunt4Treasure.RegistrationFlow
                 Message = "Categories Found Successfully"
             };
         }
-
         #endregion
         #region Money Flow
         //call the topup wallet method from the repository
@@ -445,7 +484,6 @@ namespace Haunt4Treasure.RegistrationFlow
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
-
         private static class PasswordHelper
         {
             public static (string hash, string salt) CreatePasswordHash(string password)

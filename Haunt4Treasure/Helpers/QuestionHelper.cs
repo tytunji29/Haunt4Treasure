@@ -1,4 +1,4 @@
-﻿namespace Haunt4Treasure;
+﻿namespace Haunt4Treasure.Helpers;
 public static class QuestionHelper
 {
     private static readonly Random rng = new();

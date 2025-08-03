@@ -7,6 +7,7 @@ namespace Haunt4Treasure.Repository;
 public interface IAllRepository
 {
     // Define methods for authentication operations
+    Task<User> GetUserDetials(Guid userId);
     Task<string> AddUserAsync(AddUserRequest accessToken);
     Task<List<Question>> GetQuestionsAsync(GameSession gameSession, Guid? category);
     Task<List<Question>> GetSampleQuestionsAsync();
@@ -16,6 +17,7 @@ public interface IAllRepository
     Task<decimal> TopUpWalletAsync(Guid userId, decimal amount);
     Task<bool> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
     Task<ReturnObject> PostQuestion(List<Question> ques);
+    Task<bool> UpdateProfile(Guid userId, string profilePic, string bankName, string accountNumber);
 }
 public class AllRepository(HauntDbContext dbContext) : IAllRepository
 {
@@ -111,7 +113,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
             UserId = gameSession.UserId,
             Amount = gameSession.AmountStaked,
             Type = "DR",
-            Status="Completed",
+            Status = "Completed",
             CreatedAt = DateTime.UtcNow
         };
         _dbContext.WalletTransactions.Add(walletTransaction);
@@ -187,7 +189,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
             {
                 wallet = new Wallet
                 {
-                  //  Id = Guid.NewGuid(), // Ensure you assign an ID if using one
+                    //  Id = Guid.NewGuid(), // Ensure you assign an ID if using one
                     UserId = userId,
                     Balance = 0
                 };
@@ -254,5 +256,85 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         await _dbContext.SaveChangesAsync();
         return true;
     }
+    #endregion
+    #region Profile
+    //to topup the wallet and update the balance
+    public async Task<User> GetUserDetials(Guid userId)
+    {
+
+        try
+        {
+            var wallet = _dbContext.Users
+                .Join(_dbContext.WithdrawalBanks,
+                    user => user.Id,
+                    wallet => wallet.UserId,
+                    (user, wallet) => new { user, wallet })
+                .Where(w => w.user.Id == userId)
+                .Select(w => new User
+                {
+                    Id = w.user.Id,
+                    FirstName = w.user.FirstName,
+                    LastName = w.user.LastName,
+                    Email = w.user.Email,
+                    PhoneNumber = w.user.PhoneNumber,
+                    ProfileImagePath = w.user.ProfileImagePath,
+                    AgeConfirmed = w.user.AgeConfirmed,
+                    IsEmailUser = w.user.IsEmailUser,
+                    WithdrawalBank = new WithdrawalBank
+                    {
+                        BankName = w.wallet.BankName,
+                        AccountNumber = w.wallet.AccountNumber
+                    }
+                })
+                .FirstOrDefault();
+            return wallet;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+
+    //to update the gamesession with the cashout amount by the sessionId
+    public async Task<bool> UpdateProfile(Guid userId, string profilePic,string bankName, string accountNumber)
+    {
+        // Fetch the user with tracking for updates
+        var user = await _dbContext.Users
+            .AsTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user is null)
+            throw new InvalidOperationException("User not found.");
+
+        // Update profile image
+        user.ProfileImagePath = profilePic;
+
+        // Check for existing withdrawal bank details
+        var withdrawalBank = await _dbContext.WithdrawalBanks
+            .FirstOrDefaultAsync(wb => wb.UserId == userId);
+
+        if (withdrawalBank is null)
+        {
+            withdrawalBank = new WithdrawalBank
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                BankName = bankName,
+                AccountNumber = accountNumber
+            };
+            await _dbContext.WithdrawalBanks.AddAsync(withdrawalBank);
+        }
+        else
+        {
+            withdrawalBank.BankName = bankName;
+            withdrawalBank.AccountNumber = accountNumber;
+            // No need to call Update explicitly due to tracking
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
     #endregion
 }

@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
+using System.ComponentModel.DataAnnotations.Schema;
 namespace Haunt4Treasure;
 
 // User Entity
@@ -17,6 +17,9 @@ public class User
     public bool IsEmailUser { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Wallet Wallet { get; set; }
+    [NotMapped]
+    public WithdrawalBank WithdrawalBank { get; set; }
+
     public ICollection<GameSession> GameSessions { get; set; }
     public ICollection<WalletTransaction> WalletTransactions { get; set; }
     public ICollection<Withdrawal> Withdrawals { get; set; }

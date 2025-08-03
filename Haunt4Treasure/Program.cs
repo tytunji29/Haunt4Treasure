@@ -1,5 +1,7 @@
-using System;
+﻿using System;
 using System.Text;
+using CloudinaryDotNet;
+using Haunt4Treasure.Helpers;
 using Haunt4Treasure.Models;
 using Haunt4Treasure.RegistrationFlow;
 using Haunt4Treasure.Repository;
@@ -69,6 +71,16 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// 3️⃣ Cloudinary Configuration
+var account = new Account(
+    builder.Configuration["appSettings:CloudinaryUsername"],
+    builder.Configuration["appSettings:CloudinaryApiKey"],
+    builder.Configuration["appSettings:CloudinarySecreteKey"]
+);
+var cloudinary = new Cloudinary(account) { Api = { Secure = true } };
+builder.Services.AddSingleton(cloudinary);
+
+builder.Services.AddScoped<IUploadFileService, UploadFileService>();
 builder.Services.AddScoped<IAllRepository, AllRepository>();
 builder.Services.AddScoped<IAllService, AllService>();
 
