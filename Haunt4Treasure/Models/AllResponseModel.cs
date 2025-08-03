@@ -45,6 +45,7 @@ public class LoginResponse
 {
     public decimal Balance { get; set; }
     public string? FullName { get; set; } = string.Empty;
+    public string? ProfilePicx { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
     public string Expiration { get; set; } = string.Empty;

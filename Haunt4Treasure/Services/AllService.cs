@@ -232,6 +232,7 @@ namespace Haunt4Treasure.RegistrationFlow
                     Data = new LoginResponse
                     {
                         Balance = balance,
+                        ProfilePicx = user.ProfileImagePath ?? "",
                         FullName = $"{user.FirstName} {user.LastName}",
                         Token = token,
                         RefreshToken = refreshToken,

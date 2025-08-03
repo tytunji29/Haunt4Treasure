@@ -49,7 +49,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
     public async Task<(User User, decimal balance)> GetUserAsync(string email)
     {
         decimal balance = 0;
-        var res = await _dbContext.Users.FirstOrDefaultAsync(o => o.Email.Equals(email));
+        var res = await _dbContext.Users.FirstOrDefaultAsync(o => o.Email.ToLower().Equals(email.ToLower()));
 
         if (res != null)
             balance = await _dbContext.WalletTransactions
