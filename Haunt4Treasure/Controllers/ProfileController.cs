@@ -29,7 +29,7 @@ public class ProfileController(IAllService service) : ControllerBase
     }
 
     [HttpPost("UpdateUser")]
-    public async Task<ReturnObject> UpdateUser(ProfileEdit GC)
+    public async Task<ReturnObject> UpdateUser([FromForm]ProfileEdit GC)
     {
         //no userid is coming from token extract it from token
         var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
