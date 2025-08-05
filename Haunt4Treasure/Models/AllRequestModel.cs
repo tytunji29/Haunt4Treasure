@@ -31,7 +31,7 @@ public class ExternalInternalRequest
     public bool AgeConfirmed { get; set; }
 }
 #endregion
-public record ProfileEdit(string bankName, string accountNumber,IFormFile? profilePic);
+public class ProfileEdit { public string bankName { get; set; } public string accountNumber { get; set; } public IFormFile? profilePic { get; set; } }
 public record GameCashOut(Guid sessionId, bool fiftyfifty, bool skipped, int numberOfAnsweredQuestions, decimal cashoutAmount);
 public class LoginModel
 {
