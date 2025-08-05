@@ -1,5 +1,5 @@
 ﻿using Haunt4Treasure.Models;
-using Haunt4Treasure.RegistrationFlow;
+using Haunt4Treasure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

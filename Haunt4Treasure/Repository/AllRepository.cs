@@ -233,17 +233,17 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
     //to update the gamesession with the cashout amount by the sessionId
     public async Task<bool> UpdateGameSessionCashoutAsync(GameCashOut cashOut)
     {
-        var gameSession = await _dbContext.GameSessions.FirstOrDefaultAsync(gs => gs.Id == cashOut.sessionId);
+        var gameSession = await _dbContext.GameSessions.FirstOrDefaultAsync(gs => gs.Id == cashOut.SessionId);
         if (gameSession == null)
         {
             throw new InvalidOperationException("Game session not found.");
         }
-        gameSession.CashoutAmount = cashOut.cashoutAmount;
+        gameSession.CashoutAmount = cashOut.CashoutAmount;
         gameSession.Status = "Completed";
         gameSession.EndedAt = DateTime.UtcNow;
-        gameSession.UsedFiftyFifty = cashOut.fiftyfifty;
-        gameSession.UsedSkip = cashOut.skipped;
-        gameSession.NumberOfAnsweredGame = cashOut.numberOfAnsweredQuestions;
+        gameSession.UsedFiftyFifty = cashOut.Fiftyfifty;
+        gameSession.UsedSkip = cashOut.Skipped;
+        gameSession.NumberOfAnsweredGame = cashOut.NumberOfAnsweredQuestions;
         _dbContext.GameSessions.Update(gameSession);
         // Update the user's wallet balance
         var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == gameSession.UserId);
@@ -251,7 +251,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         {
             throw new InvalidOperationException("Wallet not found for the user.");
         }
-        wallet.Balance += cashOut.cashoutAmount;
+        wallet.Balance += cashOut.CashoutAmount;
         _dbContext.Wallets.Update(wallet);
         await _dbContext.SaveChangesAsync();
         return true;

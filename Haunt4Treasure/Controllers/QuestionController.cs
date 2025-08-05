@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using Haunt4Treasure.Models;
-using Haunt4Treasure.RegistrationFlow;
+using Haunt4Treasure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +10,10 @@ namespace Haunt4Treasure.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class QuestionController(IAllService service, IHttpClientFactory httpClientFactory) : ControllerBase
+public class QuestionController(IAllService service) : ControllerBase
 {
     private readonly IAllService _allService = service;
-    private readonly IHttpClientFactory _httpClientFactory;
+   // private readonly IHttpClientFactory _httpClientFactory;
 
     [HttpPost("AddQuestion")]
     public async Task<IActionResult> AddQuestion()

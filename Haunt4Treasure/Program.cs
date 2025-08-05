@@ -3,7 +3,7 @@ using System.Text;
 using CloudinaryDotNet;
 using Haunt4Treasure.Helpers;
 using Haunt4Treasure.Models;
-using Haunt4Treasure.RegistrationFlow;
+using Haunt4Treasure.Services;
 using Haunt4Treasure.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
