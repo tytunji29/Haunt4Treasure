@@ -271,6 +271,9 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
     }
     public async Task<ReturnObject> UpdateUser(ProfileEdit det,Guid userId)
     {
+        Console.WriteLine($"Updating User Profile for UserId: {userId}");
+        Console.WriteLine($"Profile Data: {JsonSerializer.Serialize(det)}");
+
         string defImage = "";
         if (det.profilePic != null)
         {
