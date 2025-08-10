@@ -145,6 +145,8 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
                     .OrderBy(q => Guid.NewGuid())
                     .Take(25 - questions.Count)
                     .ToListAsync();
+
+                questions.AddRange(additionalQuestions);
             }
             return questions;
         }
