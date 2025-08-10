@@ -21,7 +21,23 @@ public class ReturnObject
     public dynamic Data { get; set; }
     public string Message { get; set; }
 }
-public class TriviaApiResponse
+
+public class UserDetialResponse
+{
+    public Guid Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string ProfileImagePath { get; set; } = string.Empty;
+    public decimal Balance { get; set; }
+    public WithdrawalBankResponse WithdrawalBank { get; set; }
+}
+public class WithdrawalBankResponse
+{
+    public string BankName { get; set; } = string.Empty;
+    public string AccountNumber { get; set; } = string.Empty;
+}
+    public class TriviaApiResponse
 {
     [JsonPropertyName("response_code")]
     public int ResponseCode { get; set; }

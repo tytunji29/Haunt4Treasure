@@ -7,7 +7,7 @@ namespace Haunt4Treasure.Repository;
 public interface IAllRepository
 {
     // Define methods for authentication operations
-    Task<User> GetUserDetials(Guid userId);
+    Task<UserDetialResponse> GetUserDetials(Guid userId);
     Task<string> AddUserAsync(AddUserRequest accessToken);
     Task<List<Question>> GetQuestionsAsync(GameSession gameSession, Guid? category);
     Task<List<Question>> GetSampleQuestionsAsync();
@@ -261,7 +261,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
     #endregion
     #region Profile
     //to topup the wallet and update the balance
-    public async Task<User> GetUserDetials(Guid userId)
+    public async Task<UserDetialResponse> GetUserDetials(Guid userId)
     {
 
         try
@@ -276,14 +276,18 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         )
         .SelectMany(
             ub => ub.banks.DefaultIfEmpty(), // ensures even users without bank info are included
-            (ub, bank) => new User
+            (ub, bank) => new UserDetialResponse
             {
                 Id = ub.user.Id,
                 FirstName = ub.user.FirstName,
                 LastName = ub.user.LastName,
                 Email = ub.user.Email,
+                Balance= _dbContext.Wallets
+                    .Where(w => w.UserId == ub.user.Id)
+                    .Select(w => w.Balance)
+                    .FirstOrDefault(),
                 ProfileImagePath = ub.user.ProfileImagePath,
-                WithdrawalBank = bank == null ? null : new WithdrawalBank
+                WithdrawalBank = bank == null ? null : new WithdrawalBankResponse
                 {
                     BankName = bank.BankName,
                     AccountNumber = bank.AccountNumber
