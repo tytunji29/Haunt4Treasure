@@ -118,6 +118,7 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
                 {
                     Balance = balance,
                     FullName = $"{request.FirstName} {request.LastName}",
+                    ProfileImagePath=user.ProfileImagePath,
                     Token = token,
                     RefreshToken = refreshToken,
                     Expiration = time,
@@ -230,7 +231,7 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
                 Data = new LoginResponse
                 {
                     Balance = balance,
-                    ProfilePicx = user.ProfileImagePath ?? "",
+                    ProfileImagePath = user.ProfileImagePath ?? "",
                     FullName = $"{user.FirstName} {user.LastName}",
                     Token = token,
                     RefreshToken = refreshToken,

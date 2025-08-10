@@ -21,13 +21,10 @@ public class UploadFileService : IUploadFileService
     }
     public async Task<string> UploadImageAsync(IFormFile file, string folder)
     {
-        Console.WriteLine("I reach here 1");
         if (file == null || file.Length == 0)
             throw new ArgumentException("Invalid file");
 
         await using var stream = file.OpenReadStream();
-
-        Console.WriteLine("I reach here 2");
         var uploadParams = new ImageUploadParams
         {
             File = new FileDescription(file.FileName, stream),
@@ -38,11 +35,8 @@ public class UploadFileService : IUploadFileService
         };
 
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-
-        Console.WriteLine("I reach here 3");
         if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
         {
-            Console.WriteLine("I reach here 4");
             return uploadResult.SecureUrl.ToString(); // ✅ Return secure URL
         }
 
