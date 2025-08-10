@@ -282,7 +282,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
                 FirstName = ub.user.FirstName,
                 LastName = ub.user.LastName,
                 Email = ub.user.Email,
-                Balance= _dbContext.Wallets
+                Balance = _dbContext.Wallets
                     .Where(w => w.UserId == ub.user.Id)
                     .Select(w => w.Balance)
                     .FirstOrDefault(),
@@ -306,18 +306,21 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
 
 
     //to update the gamesession with the cashout amount by the sessionId
-    public async Task<bool> UpdateProfile(Guid userId, string profilePic,string bankName, string accountNumber)
+    public async Task<bool> UpdateProfile(Guid userId, string profilePic, string bankName, string accountNumber)
     {
         // Fetch the user with tracking for updates
-        var user = await _dbContext.Users
-            .AsTracking()
+        if (!string.IsNullOrEmpty(profilePic))
+        {
+            var user = await _dbContext.Users
             .FirstOrDefaultAsync(u => u.Id == userId);
 
-        if (user is null)
-            throw new InvalidOperationException("User not found.");
+            if (user is null)
+                throw new InvalidOperationException("User not found.");
 
-        // Update profile image
-        user.ProfileImagePath = profilePic;
+            // Update profile image
+            user.ProfileImagePath = profilePic;
+            _dbContext.Users.Update(user);
+        }
 
         // Check for existing withdrawal bank details
         var withdrawalBank = await _dbContext.WithdrawalBanks
@@ -338,6 +341,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         {
             withdrawalBank.BankName = bankName;
             withdrawalBank.AccountNumber = accountNumber;
+            _dbContext.WithdrawalBanks.Update(withdrawalBank);
             // No need to call Update explicitly due to tracking
         }
 

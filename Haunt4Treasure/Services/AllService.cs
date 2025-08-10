@@ -276,6 +276,7 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
         {
              defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
         }
+        Console.WriteLine($"Profile Image Path: {defImage}");
         var rec = await _authRepo.UpdateProfile(userId,defImage,det.BankName,det.AccountNumber);
         if (rec)
         {
