@@ -113,7 +113,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
             UserId = gameSession.UserId,
             Amount = gameSession.AmountStaked,
             Type = "DR",
-            Status = "Completed",
+            Status = "Completed From Stake",
             CreatedAt = DateTime.UtcNow
         };
         _dbContext.WalletTransactions.Add(walletTransaction);
@@ -208,7 +208,7 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 Amount = amount,
-                Status = "Completed",
+                Status = "Completed From Deposit",
                 Type = "CR",
                 CreatedAt = DateTime.UtcNow
             };
@@ -247,6 +247,17 @@ public class AllRepository(HauntDbContext dbContext) : IAllRepository
         gameSession.UsedSkip = cashOut.Skipped;
         gameSession.NumberOfAnsweredGame = cashOut.NumberOfAnsweredQuestions;
         _dbContext.GameSessions.Update(gameSession);
+        //update the wallet transaction
+        var walletTransaction = new WalletTransaction
+        {
+            Id = Guid.NewGuid(),
+            UserId = gameSession.UserId,
+            Amount = cashOut.CashoutAmount,
+            Type = "CR",
+            Status = "Completed From CashOut",
+            CreatedAt = DateTime.UtcNow
+        };
+        _dbContext.WalletTransactions.Add(walletTransaction);
         // Update the user's wallet balance
         var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == gameSession.UserId);
         if (wallet == null)
