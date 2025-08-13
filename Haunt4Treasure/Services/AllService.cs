@@ -272,15 +272,11 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
     }
     public async Task<ReturnObject> UpdateUser(ProfileEdit det,Guid userId)
     {
-        Console.WriteLine($"Updating User Profile for UserId: {userId}");
-        Console.WriteLine($"Profile Data: {JsonSerializer.Serialize(det)}");
-
         string defImage = "";
         if (det.profilePic != null)
         {
              defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
         }
-        Console.WriteLine($"Profile Image Path: {defImage}");
         var rec = await _authRepo.UpdateProfile(userId,defImage,det.BankName,det.AccountNumber);
         if (rec)
         {
@@ -338,7 +334,6 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
                     Questions.Add(question);
                 }
             }
-
             var rec = await _authRepo.PostQuestion(Questions);
             return rec;
         }
