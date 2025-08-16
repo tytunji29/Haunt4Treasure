@@ -332,11 +332,7 @@ public class AllRepository(HauntDbContext dbContext, ILogger<AllRepository> logg
     {
         try
         {
-            var gameSession = await _dbContext.GameSessions.FirstOrDefaultAsync(gs => gs.Id == cashOut.SessionId);
-            if (gameSession == null)
-            {
-                throw new InvalidOperationException("Game session not found.");
-            }
+            var gameSession = await _dbContext.GameSessions.FirstOrDefaultAsync(gs => gs.Id == cashOut.SessionId) ?? throw new InvalidOperationException("Game session not found.");
             gameSession.CashoutAmount = cashOut.CashoutAmount;
             gameSession.Status = "Completed";
             gameSession.EndedAt = DateTime.UtcNow;
@@ -356,11 +352,7 @@ public class AllRepository(HauntDbContext dbContext, ILogger<AllRepository> logg
             };
             _dbContext.WalletTransactions.Add(walletTransaction);
             // Update the user's wallet balance
-            var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == gameSession.UserId);
-            if (wallet == null)
-            {
-                throw new InvalidOperationException("Wallet not found for the user.");
-            }
+            var wallet = await _dbContext.Wallets.FirstOrDefaultAsync(w => w.UserId == gameSession.UserId) ?? throw new InvalidOperationException("Wallet not found for the user.");
             wallet.Balance += cashOut.CashoutAmount;
             _dbContext.Wallets.Update(wallet);
             await _dbContext.SaveChangesAsync();
@@ -430,10 +422,7 @@ public class AllRepository(HauntDbContext dbContext, ILogger<AllRepository> logg
             if (!string.IsNullOrEmpty(profilePic))
             {
                 var user = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.Id == userId);
-
-                if (user is null)
-                    throw new InvalidOperationException("User not found.");
+                .FirstOrDefaultAsync(u => u.Id == userId) ?? throw new InvalidOperationException("User not found.");
 
                 // Update profile image
                 user.ProfileImagePath = profilePic;

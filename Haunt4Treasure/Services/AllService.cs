@@ -36,9 +36,9 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
     #region Authorization Flow
     public async Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source)
     {
-        var user = new User();
-        var userInfo = new ReturnObject();
-        var userId = "";
+        User user = new User();
+        ReturnObject userInfo = new ReturnObject();
+        string userId = "";
         try
         {
             var tokD = new UserTokenDetails();
@@ -417,20 +417,20 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
     }
     public async Task<ReturnObject> WithdrawWallet(string userId, decimal amount)
     {
-        var res = await _authRepo.TopUpWalletAsync(Guid.Parse(userId), amount);
+        var res = await _authRepo.WithdrawWalletAsync(Guid.Parse(userId), amount);
         if (res > 0)
         {
             return new ReturnObject
             {
                 Status = true,
                 Data = res,
-                Message = "Wallet Top Up Successful"
+                Message = "Wallet Debitted Successful"
             };
         }
         return new ReturnObject
         {
             Status = false,
-            Message = "Failed to Top Up Wallet"
+            Message = "Failed to Debit Wallet"
         };
     }
 
