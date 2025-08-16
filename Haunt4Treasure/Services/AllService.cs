@@ -16,20 +16,21 @@ public interface IAllService
 {
     Task<ReturnObject> PostQuestion();
     Task<ReturnObject> GetDetial(string userId);
-    Task<ReturnObject> UpdateUser(ProfileEdit rc,Guid userId);
+    Task<ReturnObject> UpdateUser(ProfileEdit rc, Guid userId);
     Task<ReturnObject> ProcessInternalUser(ExternalInternalRequest request, int source);
     Task<ReturnObject> ProcessUserLogin(LoginModel encryptedData);
     Task<ReturnObject> ProcessQuestions(string userId, decimal amountStaked, Guid? category);
     Task<ReturnObject> ProcessSampleQuestions();
     Task<ReturnObject> ProcessSampleQuestionsCategories();
     Task<ReturnObject> TopUpWallet(string userId, decimal amount);
+    Task<ReturnObject> WithdrawWallet(string userId, decimal amount);
     Task<ReturnObject> ChangePassword(LoginModel encryptedData);
     Task<ReturnObject> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
 }
 public class AllService(IConfiguration config, IUploadFileService uploadFileService, IAllRepository authRepo) : IAllService
 {
     private readonly IUploadFileService _uploadFileService = uploadFileService;
-   // private readonly IHttpClientFactory _httpClientFactory;
+    // private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _config = config;
     private readonly IAllRepository _authRepo = authRepo;
     #region Authorization Flow
@@ -118,7 +119,7 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
                 {
                     Balance = balance,
                     FullName = $"{request.FirstName} {request.LastName}",
-                    ProfileImagePath=user.ProfileImagePath,
+                    ProfileImagePath = user.ProfileImagePath,
                     Token = token,
                     RefreshToken = refreshToken,
                     Expiration = time,
@@ -270,14 +271,14 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
             Message = "No Record Found"
         };
     }
-    public async Task<ReturnObject> UpdateUser(ProfileEdit det,Guid userId)
+    public async Task<ReturnObject> UpdateUser(ProfileEdit det, Guid userId)
     {
         string defImage = "";
         if (det.profilePic != null)
         {
-             defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
+            defImage = await _uploadFileService.UploadImageAsync(det.profilePic, "Haunt4TreasureProfile");
         }
-        var rec = await _authRepo.UpdateProfile(userId,defImage,det.BankName,det.AccountNumber);
+        var rec = await _authRepo.UpdateProfile(userId, defImage, det.BankName, det.AccountNumber);
         if (rec)
         {
             return new ReturnObject
@@ -397,6 +398,24 @@ public class AllService(IConfiguration config, IUploadFileService uploadFileServ
     #region Money Flow
     //call the topup wallet method from the repository
     public async Task<ReturnObject> TopUpWallet(string userId, decimal amount)
+    {
+        var res = await _authRepo.TopUpWalletAsync(Guid.Parse(userId), amount);
+        if (res > 0)
+        {
+            return new ReturnObject
+            {
+                Status = true,
+                Data = res,
+                Message = "Wallet Top Up Successful"
+            };
+        }
+        return new ReturnObject
+        {
+            Status = false,
+            Message = "Failed to Top Up Wallet"
+        };
+    }
+    public async Task<ReturnObject> WithdrawWallet(string userId, decimal amount)
     {
         var res = await _authRepo.TopUpWalletAsync(Guid.Parse(userId), amount);
         if (res > 0)

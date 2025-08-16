@@ -13,6 +13,7 @@ public interface IAllRepository
     Task<List<QuestionCategory>> ProcessSampleQuestionsCategories();
     Task<(User User, decimal balance)> GetUserAsync(string email);
     Task<decimal> TopUpWalletAsync(Guid userId, decimal amount);
+    Task<decimal> WithdrawWalletAsync(Guid userId, decimal amount);
     Task<bool> UpdateGameSessionCashoutAsync(GameCashOut cashOut);
     Task<ReturnObject> PostQuestion(List<Question> ques);
     Task<bool> UpdateProfile(Guid userId, string profilePic, string bankName, string accountNumber);
@@ -239,7 +240,6 @@ public class AllRepository(HauntDbContext dbContext, ILogger<AllRepository> logg
             {
                 wallet = new Wallet
                 {
-                    //  Id = Guid.NewGuid(), // Ensure you assign an ID if using one
                     UserId = userId,
                     Balance = 0
                 };
@@ -258,6 +258,51 @@ public class AllRepository(HauntDbContext dbContext, ILogger<AllRepository> logg
                 Amount = amount,
                 Status = "Completed From Deposit",
                 Type = "CR",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.WalletTransactions.Add(transactionRecord);
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return wallet.Balance;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "An error occurred while processing request");
+            throw new InvalidOperationException("Wallet update failed due to a concurrency conflict.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while processing request");
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<decimal> WithdrawWalletAsync(Guid userId, decimal amount)
+    {
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
+        {
+            var wallet = await _dbContext.Wallets
+                .AsTracking() // Ensure it's tracked for update
+                .FirstOrDefaultAsync(w => w.UserId == userId);
+
+            wallet.Balance -= amount;
+
+            // Optional: no need to call Update() since EF is tracking already.
+            // _dbContext.Wallets.Update(wallet); <-- not needed
+
+            var transactionRecord = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Amount = amount,
+                Status = "Completed From Withdrawal",
+                Type = "DR",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -430,4 +475,10 @@ public class AllRepository(HauntDbContext dbContext, ILogger<AllRepository> logg
     }
 
     #endregion
+
+
+
+
+
+
 }

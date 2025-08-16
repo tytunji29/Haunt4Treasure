@@ -1,4 +1,5 @@
-﻿using Haunt4Treasure.Models;
+﻿using CloudinaryDotNet;
+using Haunt4Treasure.Models;
 using Haunt4Treasure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -56,6 +57,22 @@ namespace Haunt4Treasure.Controllers
             }
            
             var result = await _allService.UpdateGameSessionCashoutAsync(GC);
+            return result;
+        }   [HttpPost("Withdraw")]
+        public async Task<ReturnObject> Withdraw(decimal Amount)
+        {
+            //no userid is coming from token extract it from token
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new ReturnObject
+                {
+                    Status = false,
+                    Message = "User not authenticated"
+                };
+            }
+           
+            var result = await _allService.WithdrawWallet(userId, Amount);
             return result;
         }
     }
